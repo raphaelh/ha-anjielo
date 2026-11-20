@@ -1,0 +1,168 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Anjielo bridge",
+        "description": "Address of the Anjielo bridge and its API token.",
+        "data": {
+          "host": "Host",
+          "port": "API port",
+          "rtsp_port": "RTSP port",
+          "api_token": "Token"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Bridge token",
+        "description": "The bridge rejected the token: enter the new one.",
+        "data": {
+          "api_token": "Token"
+        }
+      },
+      "reconfigure": {
+        "title": "Anjielo bridge",
+        "description": "New address of the bridge (e.g. after moving it to another host).",
+        "data": {
+          "host": "Host",
+          "port": "API port",
+          "rtsp_port": "RTSP port",
+          "api_token": "Token"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot reach the bridge.",
+      "invalid_auth": "Token rejected by the bridge.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This intercom is already configured.",
+      "reauth_successful": "Token updated.",
+      "reconfigure_successful": "Bridge updated.",
+      "wrong_device": "This bridge drives another intercom."
+    }
+  },
+  "entity": {
+    "event": {
+      "sonnette": {
+        "name": "Doorbell",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "ring": "Ring"
+            }
+          }
+        }
+      },
+      "mouvement": {
+        "name": "Motion",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "detected": "Detected"
+            }
+          }
+        }
+      },
+      "alerte": {
+        "name": "Alert",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "mouvement": "Motion",
+              "humain": "Human",
+              "sonnette": "Doorbell",
+              "son": "Sound",
+              "sabotage": "Tamper",
+              "appel": "Call",
+              "inconnu": "Unknown"
+            }
+          }
+        }
+      },
+      "serrure": {
+        "name": "Lock opened",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "ouvert": "Opened"
+            }
+          }
+        }
+      },
+      "portail": {
+        "name": "Gate opened",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "ouvert": "Opened"
+            }
+          }
+        }
+      }
+    },
+    "image": {
+      "photo_sonnette": {
+        "name": "Doorbell photo"
+      },
+      "photo_mouvement": {
+        "name": "Motion photo"
+      },
+      "photo_alerte": {
+        "name": "Alert photo"
+      }
+    },
+    "button": {
+      "porte_1": {
+        "name": "Open lock"
+      },
+      "porte_2": {
+        "name": "Open gate"
+      }
+    },
+    "switch": {
+      "detection_mouvement": {
+        "name": "Motion detection"
+      },
+      "zone_mouvement": {
+        "name": "Detection zone"
+      }
+    },
+    "select": {
+      "sensibilite": {
+        "name": "Motion sensitivity",
+        "state": {
+          "basse": "Low",
+          "moyenne": "Medium",
+          "haute": "High"
+        }
+      },
+      "intervalle_alarme": {
+        "name": "Alarm interval",
+        "state": {
+          "0s": "0 s",
+          "10s": "10 s",
+          "30s": "30 s",
+          "60s": "60 s"
+        }
+      }
+    },
+    "sensor": {
+      "carte_sd": {
+        "name": "SD card",
+        "state": {
+          "normal": "Normal",
+          "erreur": "Error",
+          "pleine": "Full",
+          "formatage": "Formatting",
+          "absente": "Missing"
+        }
+      },
+      "portes": {
+        "name": "Doors"
+      },
+      "zone_surveillance": {
+        "name": "Monitoring zone"
+      }
+    }
+  }
+}
