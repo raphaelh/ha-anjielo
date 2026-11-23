@@ -1,5 +1,5 @@
 /*
- * Anjielo intercom card: live video with a "Talk" button, as in the vendor app.
+ * Anjielo intercom card: live video, with "Talk" and the open buttons under it.
  *
  * One WebRTC session, opened with the card, through Home Assistant's own WebRTC
  * path (camera/webrtc/* websocket commands, served by HA's built-in go2rtc), on
@@ -29,7 +29,8 @@
  *                                      # (hide "Open lock" there and the card drops it).
  *                                      # Also in the card editor.
  *   debug: true                        # optional: show connection steps and timings
- *   labels:                            # optional, to translate the buttons
+ *   labels:                            # optional, to override the texts (by default in
+ *                                      # Home Assistant's language: English or French)
  *     talk: Talk
  *     stop: Stop
  *     sound_on: Sound on
@@ -41,19 +42,47 @@
  *     confirm: Tap again to open    # an open button asks for a second tap
  */
 
-const VERSION = "0.9.1";
+const VERSION = "0.11.0";
 
-const DEFAULT_LABELS = {
-  talk: "Talk",
-  stop: "Stop",
-  sound_on: "Sound on",
-  connecting: "Connecting…",
-  no_microphone: "No microphone: listening only",
-  needs_https: "The microphone needs HTTPS: open Home Assistant at its https address",
-  open_gate: "Open gate",
-  open_lock: "Open door",
-  confirm: "Tap again to open",
+/* Texts per language (Home Assistant's), English for the others. */
+const TRANSLATIONS = {
+  en: {
+    talk: "Talk",
+    stop: "Stop",
+    sound_on: "Sound on",
+    connecting: "Connecting…",
+    no_microphone: "No microphone: listening only",
+    needs_https: "The microphone needs HTTPS: open Home Assistant at its https address",
+    open_gate: "Open gate",
+    open_lock: "Open door",
+    confirm: "Tap again to open",
+    connection_failed: "WebRTC connection failed",
+    editor_talk_entity: "Talk camera",
+    editor_open_buttons: "Open buttons",
+    editor_open_buttons_help: "Shown under the video, each opens on a second tap. None ticked: those not hidden on the device page",
+  },
+  fr: {
+    talk: "Parler",
+    stop: "Raccrocher",
+    sound_on: "Activer le son",
+    connecting: "Connexion…",
+    no_microphone: "Pas de micro : écoute seulement",
+    needs_https: "Le micro demande HTTPS : ouvrez Home Assistant à son adresse https",
+    open_gate: "Ouvrir le portail",
+    open_lock: "Ouvrir la porte",
+    confirm: "Touchez encore pour ouvrir",
+    connection_failed: "Échec de la connexion WebRTC",
+    editor_talk_entity: "Caméra Talk",
+    editor_open_buttons: "Boutons d'ouverture",
+    editor_open_buttons_help: "Affichés sous la vidéo, chacun ouvre au second appui. Aucun coché : ceux qui ne sont pas masqués sur la page de l'appareil",
+  },
 };
+
+/* Texts in a language ("fr", "fr-FR"…), English when it is not translated. */
+function texts(language) {
+  const lang = String(language || "en").toLowerCase().split(/[-_]/)[0];
+  return { ...TRANSLATIONS.en, ...(TRANSLATIONS[lang] || {}) };
+}
 
 /* Open buttons the card can show: the integration's button entities. */
 const OPEN_BUTTONS = [
@@ -223,26 +252,31 @@ const STYLE = `
             pointer-events: none; text-shadow: 0 1px 3px #000; }
   .notice { position: absolute; left: 0; right: 0; top: 0; padding: 6px 12px;
             background: rgba(0, 0, 0, .6); color: #fff; font-size: 13px; white-space: pre-wrap; }
-  .talk { position: absolute; right: 12px; bottom: 12px; border: 0; border-radius: 28px;
-          padding: 12px 18px; font: inherit; font-weight: 500; cursor: pointer;
-          display: flex; align-items: center; gap: 8px; color: #fff;
-          background: rgba(0, 0, 0, .55); box-shadow: 0 2px 6px rgba(0, 0, 0, .4); }
-  .talk ha-icon { --mdc-icon-size: 24px; }
-  .talk.on { background: var(--error-color, #db4437); }
   .sound { position: absolute; left: 12px; bottom: 12px; border: 0; border-radius: 20px;
            padding: 8px 14px; font: inherit; cursor: pointer; color: #fff;
            background: rgba(0, 0, 0, .55); }
+  /* Buttons under the video, drawn like Home Assistant's tile cards. */
   .actions { display: flex; gap: 8px; padding: 8px; }
-  .actions[hidden] { display: none; }
-  .open { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
-          min-height: 48px; padding: 8px 12px; border-radius: 12px; cursor: pointer;
-          font: inherit; font-weight: 500; color: var(--primary-text-color);
-          background: var(--secondary-background-color, rgba(127, 127, 127, .12));
-          border: 1px solid var(--divider-color, rgba(127, 127, 127, .25)); }
-  .open ha-icon { --mdc-icon-size: 22px; color: var(--state-icon-color, var(--primary-color)); }
-  .open.confirm { background: var(--warning-color, #ffa600); color: #fff; border-color: transparent; }
-  .open.confirm ha-icon { color: #fff; }
-  .open:disabled { opacity: .45; cursor: default; }
+  .opens { display: contents; }
+  .tile { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 10px;
+          min-height: 56px; padding: 10px; box-sizing: border-box; cursor: pointer;
+          font: inherit; font-size: 14px; font-weight: 500; line-height: 20px; text-align: left;
+          color: var(--primary-text-color);
+          background: var(--ha-card-background, var(--card-background-color, #fff));
+          border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color, #e0e0e0));
+          border-radius: var(--ha-card-border-radius, 12px);
+          --tile-color: var(--state-icon-color, #44739e); }
+  .tile:hover:not(:disabled) { background: color-mix(in srgb, var(--primary-text-color) 4%,
+          var(--ha-card-background, var(--card-background-color, #fff))); }
+  .tile .icon { flex: none; width: 36px; height: 36px; border-radius: 18px; display: flex;
+                align-items: center; justify-content: center; color: var(--tile-color); }
+  .tile ha-icon { --mdc-icon-size: 24px; }
+  .tile span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tile.on, .tile.confirm { border-color: var(--tile-color); }
+  .tile.on .icon, .tile.confirm .icon { background: color-mix(in srgb, var(--tile-color) 20%, transparent); }
+  .tile.on { --tile-color: var(--error-color, #db4437); }
+  .tile.confirm { --tile-color: var(--warning-color, #ffa600); }
+  .tile:disabled { opacity: .45; cursor: default; }
   [hidden] { display: none !important; }
 `;
 
@@ -270,17 +304,17 @@ class AnjieloTalkCard extends HTMLElement {
 
   /* The card editor (HA's own form): camera and open buttons. */
   static getConfigForm() {
+    const T = texts(document.documentElement.lang); // HA sets it to the user's language
     return {
       schema: [
         { name: "talk_entity", required: true,
           selector: { entity: { domain: "camera", integration: "anjielo" } } },
         { name: "open_buttons",
           selector: { select: { multiple: true, mode: "list", options: OPEN_BUTTONS.map((b) => ({
-            value: b.key, label: DEFAULT_LABELS[b.translation_key] })) } } },
+            value: b.key, label: T[b.translation_key] })) } } },
       ],
-      computeLabel: (s) => ({ talk_entity: "Talk camera", open_buttons: "Open buttons" })[s.name],
-      computeHelper: (s) => s.name === "open_buttons"
-        ? "Shown under the video, each opens on a second tap. None ticked: those not hidden on the device page" : undefined,
+      computeLabel: (s) => ({ talk_entity: T.editor_talk_entity, open_buttons: T.editor_open_buttons })[s.name],
+      computeHelper: (s) => s.name === "open_buttons" ? T.editor_open_buttons_help : undefined,
     };
   }
 
@@ -296,13 +330,20 @@ class AnjieloTalkCard extends HTMLElement {
     this._qualityEntity = typeof config.quality_entity === "string" && config.quality_entity.startsWith("select.")
       ? config.quality_entity : null;
     this._siblingsDone = false;
-    this._labels = { ...DEFAULT_LABELS, ...(config.labels || {}) };
+    this._userLabels = config.labels || {};
     // null: follow the device page (buttons not hidden there)
     this._openButtons = Array.isArray(config.open_buttons) && config.open_buttons.length
       ? OPEN_BUTTONS.filter((b) => config.open_buttons.includes(b.key)) : null;
     this._openEntities = {};
     this._confirming = null;
     this._render();
+  }
+
+  /* The texts: in Home Assistant's language, then those given in the card's labels. */
+  get _labels() {
+    const h = this._hass;
+    const lang = (h && ((h.locale && h.locale.language) || h.language)) || document.documentElement.lang;
+    return { ...texts(lang), ...(this._userLabels || {}) };
   }
 
   set hass(hass) {
@@ -341,9 +382,11 @@ class AnjieloTalkCard extends HTMLElement {
             <div class="status" id="status"></div>
             <div class="notice" id="notice" hidden></div>
             <button class="sound" id="sound" hidden></button>
-            <button class="talk" id="talk"><ha-icon></ha-icon><span></span></button>
           </div>
-          <div class="actions" id="actions" hidden></div>
+          <div class="actions" id="actions" hidden>
+            <button class="tile talk" id="talk"><div class="icon"><ha-icon></ha-icon></div><span></span></button>
+            <div class="opens" id="opens"></div>
+          </div>
         </ha-card>`;
       this._video = this.shadowRoot.querySelector("video");
       this._audio = this.shadowRoot.querySelector("audio");
@@ -376,9 +419,9 @@ class AnjieloTalkCard extends HTMLElement {
     status.hidden = !status.textContent;
   }
 
-  /* The open buttons row: one button per chosen entity found on the device. */
+  /* The row under the video: Talk, then one open button per chosen entity found on the device. */
   _updateActions() {
-    const row = this._$("actions");
+    const row = this._$("opens");
     const ents = (this._hass && this._hass.entities) || {};
     const shown = (this._openButtons || OPEN_BUTTONS.filter((b) => {
       const e = ents[this._openEntities[b.key]];
@@ -389,14 +432,17 @@ class AnjieloTalkCard extends HTMLElement {
       row.dataset.keys = keys;
       row.replaceChildren(...shown.map((b) => {
         const btn = document.createElement("button");
-        btn.className = "open";
+        btn.className = "tile open";
         btn.dataset.key = b.key;
-        btn.append(document.createElement("ha-icon"), document.createElement("span"));
+        const icon = document.createElement("div");
+        icon.className = "icon";
+        icon.append(document.createElement("ha-icon"));
+        btn.append(icon, document.createElement("span"));
         btn.addEventListener("click", () => this._openPress(b.key));
         return btn;
       }));
     }
-    row.hidden = !shown.length;
+    this._$("actions").hidden = !shown.length && !this._canTalk;
     for (const btn of row.children) {
       const b = OPEN_BUTTONS.find((x) => x.key === btn.dataset.key);
       const entity = this._openEntities[b.key];
@@ -405,7 +451,8 @@ class AnjieloTalkCard extends HTMLElement {
       btn.classList.toggle("confirm", confirm);
       btn.disabled = !st || st.state === "unavailable";
       btn.querySelector("ha-icon").icon = b.icon;
-      btn.querySelector("span").textContent = confirm ? this._labels.confirm : this._labels[b.translation_key];
+      const L = this._labels;
+      btn.querySelector("span").textContent = confirm ? L.confirm : L[b.translation_key];
     }
   }
 
@@ -543,7 +590,7 @@ class AnjieloTalkCard extends HTMLElement {
           this._update();
         } else if (state === "failed") {
           rtc.diagnose().then((d) => {
-            if (rtc === this._rtc) this._fail(`WebRTC connection failed: ${d}`);
+            if (rtc === this._rtc) this._fail(`${this._labels.connection_failed}: ${d}`);
           });
         }
       },
