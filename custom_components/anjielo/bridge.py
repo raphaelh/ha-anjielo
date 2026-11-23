@@ -34,6 +34,8 @@ class AnjieloBridge:
         self.discovery = discovery
         self.state = dict(state)
         self.rtsp_port = rtsp_port
+        # The registry id of the Anjielo Bridge add-on's device, when installed.
+        self.app_device: str | None = None
         self.device_id: str = info["device_id"]
         self.connected = False
         self._listeners: dict[str, set[Listener]] = {}

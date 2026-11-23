@@ -16,13 +16,22 @@ from .const import DOMAIN, TRANSLATED_KEYS
 
 def device_info(bridge: AnjieloBridge) -> DeviceInfo:
     info = bridge.info
-    return DeviceInfo(
+    dev = DeviceInfo(
         identifiers={(DOMAIN, bridge.device_id)},
         name="Intercom",  # fixed English name (the bridge reports its local device name)
         manufacturer=info.get("manufacturer"),
-        sw_version=info.get("version"),
+        model=info.get("model"),  # given by the user to the bridge: not readable locally
+        # The intercom's firmware is not known; the bridge's version is not it.
+        # With the add-on, the device page links to it ("Connected via") and
+        # shows nothing as firmware.
+        sw_version=None if bridge.app_device else f"Bridge {info.get('version')}",
         configuration_url=None,
     )
+    if bridge.app_device:
+        # via_device_id (the registry id): via_device is deprecated, and an
+        # error for cameras, since Home Assistant 2026.11.
+        dev["via_device_id"] = bridge.app_device
+    return dev
 
 
 def entities_for(bridge: AnjieloBridge, component: str) -> list[dict[str, Any]]:

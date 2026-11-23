@@ -19,7 +19,7 @@
  *   type: custom:anjielo-talk-card
  *   talk_entity: camera.intercom_talk  # video, sound, microphone
  *   sd_entity: camera.intercom_talk_sd # optional: the same in SD (slow links)
- *   quality_entity: select.intercom_video_quality  # optional: the integration's HD/SD setting
+ *   quality_entity: select.intercom_talk_card_video_quality  # optional: the integration's HD/SD setting
  *   (sd_entity and quality_entity are found on talk_entity's device when not given;
  *    the card follows the setting, changed in the integration, with its upload test)
  *   entity: camera.intercom            # optional: video only, used without talk_entity

@@ -124,7 +124,7 @@
         "name": "Open gate"
       },
       "test_upload": {
-        "name": "Test upload (HD or SD)"
+        "name": "Talk card: test upload (HD or SD)"
       }
     },
     "switch": {
@@ -154,7 +154,7 @@
         }
       },
       "video_quality": {
-        "name": "Video quality",
+        "name": "Talk card: video quality",
         "state": {
           "hd": "HD",
           "sd": "SD (slow links)"
@@ -179,7 +179,7 @@
         "name": "Detection zone"
       },
       "upload_speed": {
-        "name": "Upload speed"
+        "name": "Talk card: upload speed"
       }
     },
     "camera": {

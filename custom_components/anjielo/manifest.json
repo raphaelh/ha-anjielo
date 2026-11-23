@@ -3,6 +3,7 @@
   "name": "Anjielo Intercom",
   "after_dependencies": [
     "frontend",
+    "hassio",
     "stream"
   ],
   "codeowners": [],

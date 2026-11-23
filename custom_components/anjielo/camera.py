@@ -29,6 +29,7 @@ import logging
 from urllib.parse import quote
 
 from homeassistant.components.camera import Camera, CameraEntityFeature
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -122,6 +123,9 @@ class AnjieloTalkCamera(_AnjieloCameraBase):
 
     _attr_translation_key = "talk"
     _attr_entity_registry_enabled_default = False
+    # Plumbing for the talk card, not a view of its own: kept out of the
+    # device page's main lists and of generated dashboards.
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _unique_suffix = "camera_talk"
     _path_key = "talk"
 

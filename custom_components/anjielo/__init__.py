@@ -19,6 +19,7 @@ from homeassistant.const import CONF_API_TOKEN, CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import ConfigType
 
@@ -74,10 +75,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: AnjieloConfigEntry) -> b
         state,
         entry.data.get(CONF_RTSP_PORT, DEFAULT_RTSP_PORT),
     )
+    bridge.app_device = _app_device(hass)
     entry.runtime_data = bridge
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_create_background_task(hass, bridge.run(), "anjielo_sse")
     return True
+
+
+def _app_device(hass: HomeAssistant) -> str | None:
+    """The registry id of the Anjielo Bridge add-on's device, created by the
+    Supervisor integration (slug "local_anjielo_bridge", or
+    "<repository>_anjielo_bridge")."""
+    reg = dr.async_get(hass)
+    for entry in hass.config_entries.async_entries("hassio"):
+        for device in dr.async_entries_for_config_entry(reg, entry.entry_id):
+            for domain, ident in device.identifiers:
+                if domain == "hassio" and (ident == "anjielo_bridge" or ident.endswith("_anjielo_bridge")):
+                    return device.id
+    return None
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: AnjieloConfigEntry) -> bool:
