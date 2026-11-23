@@ -126,8 +126,15 @@ class AnjieloTalkCamera(_AnjieloCameraBase):
     # Plumbing for the talk card, not a view of its own: kept out of the
     # device page's main lists and of generated dashboards.
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:account-voice"
     _unique_suffix = "camera_talk"
     _path_key = "talk"
+
+    @property
+    def entity_picture(self) -> str | None:
+        # No thumbnail (it would open a call): show the icon instead of an
+        # empty picture on the device page.
+        return None
 
 
 class AnjieloTalkSDCamera(AnjieloTalkCamera):

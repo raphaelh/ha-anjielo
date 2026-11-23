@@ -184,10 +184,10 @@
     },
     "camera": {
       "talk": {
-        "name": "Talk"
+        "name": "Talk card: stream (HD)"
       },
       "talk_sd": {
-        "name": "Talk (SD)"
+        "name": "Talk card: stream (SD)"
       }
     }
   }
