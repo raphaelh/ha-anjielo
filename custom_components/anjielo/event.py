@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import AnjieloConfigEntry
-from .entity import AnjieloEntity, english_attrs, entities_for, parse_json
+from .entity import AnjieloEntity, entities_for, parse_json
 
 
 async def async_setup_entry(
@@ -20,6 +20,7 @@ async def async_setup_entry(
 
 
 class AnjieloEvent(AnjieloEntity, EventEntity):
+    available_without_bridge = True  # a past event / photo
     def __init__(self, bridge, desc) -> None:
         super().__init__(bridge, desc)
         self._attr_event_types = list(self.conf.get("event_types", []))
@@ -45,5 +46,5 @@ class AnjieloEvent(AnjieloEntity, EventEntity):
         et = data.pop("event_type", None)
         if et not in self._attr_event_types:
             return
-        self._trigger_event(et, english_attrs({k: v for k, v in data.items() if v is not None}))
+        self._trigger_event(et, {k: v for k, v in data.items() if v is not None})
         self.async_write_ha_state()

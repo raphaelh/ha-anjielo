@@ -27,12 +27,17 @@
           "rtsp_port": "RTSP port",
           "api_token": "Token"
         }
+      },
+      "hassio_confirm": {
+        "title": "Anjielo Bridge add-on",
+        "description": "Add the intercom driven by the Anjielo Bridge add-on?"
       }
     },
     "error": {
       "cannot_connect": "Cannot reach the bridge.",
       "invalid_auth": "Token rejected by the bridge.",
-      "unknown": "Unexpected error."
+      "unknown": "Unexpected error.",
+      "incompatible_version": "The bridge and this integration are from different releases: update both to the same version."
     },
     "abort": {
       "already_configured": "This intercom is already configured.",
@@ -43,7 +48,7 @@
   },
   "entity": {
     "event": {
-      "sonnette": {
+      "doorbell": {
         "name": "Doorbell",
         "state_attributes": {
           "event_type": {
@@ -53,7 +58,7 @@
           }
         }
       },
-      "mouvement": {
+      "motion": {
         "name": "Motion",
         "state_attributes": {
           "event_type": {
@@ -63,80 +68,83 @@
           }
         }
       },
-      "alerte": {
+      "alert": {
         "name": "Alert",
         "state_attributes": {
           "event_type": {
             "state": {
-              "mouvement": "Motion",
-              "humain": "Human",
-              "sonnette": "Doorbell",
-              "son": "Sound",
-              "sabotage": "Tamper",
-              "appel": "Call",
-              "inconnu": "Unknown"
+              "motion": "Motion",
+              "human": "Human",
+              "doorbell": "Doorbell",
+              "sound": "Sound",
+              "tamper": "Tamper",
+              "call": "Call",
+              "unknown": "Unknown"
             }
           }
         }
       },
-      "serrure": {
+      "lock_opened": {
         "name": "Lock opened",
         "state_attributes": {
           "event_type": {
             "state": {
-              "ouvert": "Opened"
+              "opened": "Opened"
             }
           }
         }
       },
-      "portail": {
+      "gate_opened": {
         "name": "Gate opened",
         "state_attributes": {
           "event_type": {
             "state": {
-              "ouvert": "Opened"
+              "opened": "Opened"
             }
           }
         }
       }
     },
     "image": {
-      "photo_sonnette": {
+      "doorbell_photo": {
         "name": "Doorbell photo"
       },
-      "photo_mouvement": {
+      "motion_photo": {
         "name": "Motion photo"
       },
-      "photo_alerte": {
+      "alert_photo": {
         "name": "Alert photo"
       }
     },
     "button": {
-      "porte_1": {
+      "open_lock": {
         "name": "Open lock"
       },
-      "porte_2": {
+      "open_gate": {
         "name": "Open gate"
+      },
+      "test_upload": {
+        "name": "Test upload (HD or SD)"
       }
     },
     "switch": {
-      "detection_mouvement": {
+      "motion_detection": {
         "name": "Motion detection"
       },
-      "zone_mouvement": {
-        "name": "Detection zone"
+      "motion_zone": {
+        "name": "Motion zone"
       }
     },
     "select": {
-      "sensibilite": {
+      "motion_sensitivity": {
         "name": "Motion sensitivity",
         "state": {
-          "basse": "Low",
-          "moyenne": "Medium",
-          "haute": "High"
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
         }
       },
-      "intervalle_alarme": {
+      "alarm_interval": {
         "name": "Alarm interval",
         "state": {
           "0s": "0 s",
@@ -144,24 +152,42 @@
           "30s": "30 s",
           "60s": "60 s"
         }
+      },
+      "video_quality": {
+        "name": "Video quality",
+        "state": {
+          "hd": "HD",
+          "sd": "SD (slow links)"
+        }
       }
     },
     "sensor": {
-      "carte_sd": {
+      "sd_card": {
         "name": "SD card",
         "state": {
           "normal": "Normal",
-          "erreur": "Error",
-          "pleine": "Full",
-          "formatage": "Formatting",
-          "absente": "Missing"
+          "error": "Error",
+          "full": "Full",
+          "formatting": "Formatting",
+          "no_card": "No card"
         }
       },
-      "portes": {
+      "doors": {
         "name": "Doors"
       },
-      "zone_surveillance": {
-        "name": "Monitoring zone"
+      "detection_zone": {
+        "name": "Detection zone"
+      },
+      "upload_speed": {
+        "name": "Upload speed"
+      }
+    },
+    "camera": {
+      "talk": {
+        "name": "Talk"
+      },
+      "talk_sd": {
+        "name": "Talk (SD)"
       }
     }
   }

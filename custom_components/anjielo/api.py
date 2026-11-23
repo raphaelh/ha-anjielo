@@ -25,8 +25,23 @@ class AnjieloConnectionError(AnjieloError):
     """Bridge unreachable or invalid response."""
 
 
-# Photos are ~170 kB of base64 on ONE SSE line -> split lines ourselves (aiohttp's
-# readline caps at 128 kB). Upper bound against a stream with no line ending.
+class AnjieloVersionError(AnjieloError):
+    """The bridge speaks another API version than this integration."""
+
+
+def check_api_version(info: dict[str, Any], expected: int) -> None:
+    """Raise AnjieloVersionError unless /api/info reports the expected version."""
+    got = info.get("api_version")
+    if got != expected:
+        raise AnjieloVersionError(
+            f"bridge API version {got if got is not None else 'unknown (pre-v1)'}, "
+            f"this integration needs {expected}: install the bridge add-on and the "
+            "integration of the same release"
+        )
+
+
+# SSE lines are split by hand (aiohttp's readline caps at 128 kB); upper bound
+# against a stream with no line ending.
 _MAX_SSE_LINE = 8 * 1024 * 1024
 
 
@@ -84,7 +99,7 @@ class AnjieloApi:
         return await self._get_json("/api/state") or {}
 
     async def image(self, kind: str) -> bytes | None:
-        """Latest photo (ring|motion|alerte); None if there is none."""
+        """Latest photo (doorbell|motion|alert); None if there is none."""
         resp = await self._request("GET", f"/api/image/{kind}")
         async with resp:
             if resp.status == 404:
@@ -94,7 +109,7 @@ class AnjieloApi:
             return await resp.read()
 
     async def command(self, rel: str, payload: str) -> None:
-        """Same as the MQTT topic cmd/<rel> (e.g. "unlock/235", "set/134")."""
+        """Command for an entity key (e.g. "open_gate", "motion_detection")."""
         resp = await self._request("POST", f"/api/cmd/{rel}", data=payload)
         async with resp:
             if resp.status >= 300:

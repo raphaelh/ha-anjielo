@@ -1,4 +1,4 @@
-"""Base entity: one entry of /api/discovery (same description as the bridge's MQTT discovery)."""
+"""Base entity: one entry of the bridge's /api/discovery."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity
 
 from .bridge import AnjieloBridge
-from .const import ATTR_NAMES, ATTR_VALUES, DOMAIN, TRANSLATED_KEYS
+from .const import DOMAIN, TRANSLATED_KEYS
 
 
 def device_info(bridge: AnjieloBridge) -> DeviceInfo:
@@ -20,21 +20,13 @@ def device_info(bridge: AnjieloBridge) -> DeviceInfo:
         identifiers={(DOMAIN, bridge.device_id)},
         name="Intercom",  # fixed English name (the bridge reports its local device name)
         manufacturer=info.get("manufacturer"),
-        model=info.get("model"),
+        sw_version=info.get("version"),
         configuration_url=None,
     )
 
 
 def entities_for(bridge: AnjieloBridge, component: str) -> list[dict[str, Any]]:
     return [d for d in bridge.discovery if d.get("component") == component]
-
-
-def english_attrs(attrs: dict[str, Any]) -> dict[str, Any]:
-    """Bridge attributes (French) -> English names and values."""
-    return {
-        ATTR_NAMES.get(k, k): ATTR_VALUES.get(v, v) if isinstance(v, str) else v
-        for k, v in attrs.items()
-    }
 
 
 def parse_json(payload: str) -> dict[str, Any]:
@@ -48,6 +40,13 @@ def parse_json(payload: str) -> dict[str, Any]:
 class AnjieloEntity(Entity):
     """Entity driven by the topics of its discovery config."""
 
+    # Past facts (last ring, last photo) stay true while the bridge is away:
+    # such entities keep their value instead of going unavailable. That also
+    # keeps them restorable: Home Assistant does not restore an event (or a
+    # button) whose last saved state was "unavailable", so a restart during a
+    # bridge update used to lose the last ring.
+    available_without_bridge = False
+
     _attr_has_entity_name = True
     _attr_should_poll = False
 
@@ -56,7 +55,7 @@ class AnjieloEntity(Entity):
         self.key: str = desc["key"]
         self.conf: dict[str, Any] = desc.get("config", {})
         conf = self.conf
-        self._attr_unique_id = conf.get("unique_id") or f"anjielo_{bridge.device_id}_{self.key}"
+        self._attr_unique_id = f"anjielo_{bridge.device_id}_{self.key}"
         if self.key in TRANSLATED_KEYS:
             self._attr_translation_key = self.key  # English name from translations
         else:
@@ -72,11 +71,11 @@ class AnjieloEntity(Entity):
 
     @property
     def available(self) -> bool:
-        return self.bridge.available
+        return self.available_without_bridge or self.bridge.available
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
-        return english_attrs(self._attrs) or None
+        return self._attrs or None
 
     async def async_added_to_hass(self) -> None:
         b = self.bridge

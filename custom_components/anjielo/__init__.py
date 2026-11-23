@@ -2,22 +2,50 @@
 
 The bridge holds the device's ONLY local session. This integration reads the
 bridge's API (state, events over SSE, commands) and hands the bridge's RTSP
-stream to HA for the camera.
+stream to HA for the camera. It also serves a dashboard card to answer the
+intercom (www/anjielo-talk-card.js: video, sound and microphone over HA's own
+WebRTC, on the "Talk" camera).
 """
 
 from __future__ import annotations
 
+import hashlib
+from pathlib import Path
+
+from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_TOKEN, CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.typing import ConfigType
 
-from .api import AnjieloApi, AnjieloAuthError, AnjieloError
+from .api import AnjieloApi, AnjieloAuthError, AnjieloError, check_api_version
 from .bridge import AnjieloBridge
-from .const import CONF_RTSP_PORT, DEFAULT_RTSP_PORT, PLATFORMS
+from .const import API_VERSION, CONF_RTSP_PORT, DEFAULT_RTSP_PORT, DOMAIN, PLATFORMS
 
 type AnjieloConfigEntry = ConfigEntry[AnjieloBridge]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+CARD_URL = "/anjielo/anjielo-talk-card.js"
+
+
+def _file_digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()[:12]
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Serve the talk card and load it in every dashboard."""
+    card = Path(__file__).parent / "www" / "anjielo-talk-card.js"
+    await hass.http.async_register_static_paths([StaticPathConfig(CARD_URL, str(card), False)])
+    # A hash of the file in the URL makes browsers fetch the card again when it changes.
+    digest = await hass.async_add_executor_job(_file_digest, card)
+    if "frontend" in hass.config.components:
+        add_extra_js_url(hass, f"{CARD_URL}?v={digest}")
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: AnjieloConfigEntry) -> bool:
@@ -29,6 +57,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: AnjieloConfigEntry) -> b
     )
     try:
         info = await api.info()
+        # Not ready (retried) rather than failed: updating the bridge fixes it.
+        check_api_version(info, API_VERSION)
         discovery = await api.discovery()
         state = await api.state()
     except AnjieloAuthError as err:

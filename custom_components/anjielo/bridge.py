@@ -35,21 +35,20 @@ class AnjieloBridge:
         self.state = dict(state)
         self.rtsp_port = rtsp_port
         self.device_id: str = info["device_id"]
-        self.base_topic: str = info.get("base_topic", "")
         self.connected = False
         self._listeners: dict[str, set[Listener]] = {}
         self._avail_listeners: set[Callable[[], None]] = set()
 
     # --- topics ------------------------------------------------------------
-    def rel(self, topic: str | None) -> str | None:
-        """Absolute discovery topic -> topic relative to the API."""
-        if not topic:
-            return None
-        return topic.removeprefix(self.base_topic)
+    @staticmethod
+    def rel(topic: str | None) -> str | None:
+        """Discovery topic (already relative to the API), or None."""
+        return topic or None
 
-    def cmd_rel(self, topic: str) -> str:
-        """Absolute command_topic -> path under /api/cmd/."""
-        return topic.removeprefix(self.base_topic).removeprefix("cmd/")
+    @staticmethod
+    def cmd_rel(topic: str) -> str:
+        """command_topic "cmd/<key>" -> path under /api/cmd/."""
+        return topic.removeprefix("cmd/")
 
     @property
     def available(self) -> bool:

@@ -2,6 +2,7 @@
   "domain": "anjielo",
   "name": "Anjielo Intercom",
   "after_dependencies": [
+    "frontend",
     "stream"
   ],
   "codeowners": [],

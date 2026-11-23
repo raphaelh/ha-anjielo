@@ -1,4 +1,8 @@
-"""Config flow: bridge host, ports and token; reauth and reconfigure (e.g. moving the bridge)."""
+"""Config flow: bridge host, ports and token; reauth and reconfigure (e.g. moving the bridge).
+
+With the Anjielo Bridge add-on, the Supervisor announces the bridge
+(async_step_hassio): the user only confirms.
+"""
 
 from __future__ import annotations
 
@@ -11,9 +15,16 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_API_TOKEN, CONF_HOST, CONF_PORT
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 
-from .api import AnjieloApi, AnjieloAuthError, AnjieloError
-from .const import CONF_RTSP_PORT, DEFAULT_PORT, DEFAULT_RTSP_PORT, DOMAIN
+from .api import (
+    AnjieloApi,
+    AnjieloAuthError,
+    AnjieloError,
+    AnjieloVersionError,
+    check_api_version,
+)
+from .const import API_VERSION, CONF_RTSP_PORT, DEFAULT_PORT, DEFAULT_RTSP_PORT, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,6 +47,9 @@ def _schema(defaults: dict[str, Any]) -> vol.Schema:
 class AnjieloConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
+    def __init__(self) -> None:
+        self._discovered: dict[str, Any] = {}
+
     async def _validate(
         self, data: dict[str, Any], errors: dict[str, str]
     ) -> dict[str, Any] | None:
@@ -46,9 +60,14 @@ class AnjieloConfigFlow(ConfigFlow, domain=DOMAIN):
             data.get(CONF_API_TOKEN, "").strip(),
         )
         try:
-            return await api.info()
+            info = await api.info()
+            check_api_version(info, API_VERSION)
+            return info
         except AnjieloAuthError:
             errors["base"] = "invalid_auth"
+        except AnjieloVersionError as err:
+            _LOGGER.warning("Anjielo: %s", err)
+            errors["base"] = "incompatible_version"
         except AnjieloError:
             errors["base"] = "cannot_connect"
         except Exception:
@@ -79,6 +98,37 @@ class AnjieloConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user", data_schema=_schema(user_input or {}), errors=errors
         )
+
+    async def async_step_hassio(self, discovery_info: HassioServiceInfo) -> ConfigFlowResult:
+        """The Anjielo Bridge add-on announces itself (host, ports, token)."""
+        conf = discovery_info.config
+        self._discovered = {
+            CONF_HOST: str(conf.get(CONF_HOST, "127.0.0.1")),
+            CONF_PORT: int(conf.get(CONF_PORT, DEFAULT_PORT)),
+            CONF_RTSP_PORT: int(conf.get(CONF_RTSP_PORT, DEFAULT_RTSP_PORT)),
+            CONF_API_TOKEN: str(conf.get(CONF_API_TOKEN, "")),
+        }
+        # The add-on announces itself before its bridge listens: if it does
+        # not answer yet, identify the intercom at confirmation time.
+        info = await self._validate(self._discovered, {})
+        if info is not None:
+            await self.async_set_unique_id(info["device_id"])
+            # Already configured (by hand, or an older add-on token): follow the add-on.
+            self._abort_if_unique_id_configured(updates=self._discovered)
+        return await self.async_step_hassio_confirm()
+
+    async def async_step_hassio_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            info = await self._validate(self._discovered, errors)
+            if info is not None:
+                await self.async_set_unique_id(info["device_id"])
+                self._abort_if_unique_id_configured(updates=self._discovered)
+                return self.async_create_entry(title="Intercom", data=self._discovered)
+        self._set_confirm_only()
+        return self.async_show_form(step_id="hassio_confirm", errors=errors)
 
     async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> ConfigFlowResult:
         return await self.async_step_reauth_confirm()

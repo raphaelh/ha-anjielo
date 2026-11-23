@@ -31,3 +31,8 @@ To move the bridge to another host: ⋮ → **Reconfigure** on the integration (
   "Doorbell photo" that opens the camera when tapped.
 - If the camera stays on HLS or shows "Stream source is not supported by go2rtc", reload Home Assistant's
   **go2rtc** integration.
+
+## Disclaimer
+This is an independent, community project. It is **not affiliated with, endorsed by or supported by
+Anjielo or Tuya**. "Anjielo" and "Tuya" are trademarks of their respective owners and are used here
+only to describe which device this integration works with. The icon is original artwork.
