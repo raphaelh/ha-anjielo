@@ -24,8 +24,10 @@
  *    the card follows the setting, changed in the integration, with its upload test)
  *   entity: camera.intercom            # optional: video only, used without talk_entity
  *   open_buttons: [gate, lock]         # optional: open buttons under the video, among
- *                                      # gate and lock (found on talk_entity's device;
- *                                      # default: both; [] for none). Also in the card editor.
+ *                                      # gate and lock (found on talk_entity's device).
+ *                                      # Default: those not hidden on the device page
+ *                                      # (hide "Open lock" there and the card drops it).
+ *                                      # Also in the card editor.
  *   debug: true                        # optional: show connection steps and timings
  *   labels:                            # optional, to translate the buttons
  *     talk: Talk
@@ -39,7 +41,7 @@
  *     confirm: Tap again to open    # an open button asks for a second tap
  */
 
-const VERSION = "0.9.0";
+const VERSION = "0.9.1";
 
 const DEFAULT_LABELS = {
   talk: "Talk",
@@ -278,7 +280,7 @@ class AnjieloTalkCard extends HTMLElement {
       ],
       computeLabel: (s) => ({ talk_entity: "Talk camera", open_buttons: "Open buttons" })[s.name],
       computeHelper: (s) => s.name === "open_buttons"
-        ? "Shown under the video, each opens on a second tap" : undefined,
+        ? "Shown under the video, each opens on a second tap. None ticked: those not hidden on the device page" : undefined,
     };
   }
 
@@ -295,8 +297,9 @@ class AnjieloTalkCard extends HTMLElement {
       ? config.quality_entity : null;
     this._siblingsDone = false;
     this._labels = { ...DEFAULT_LABELS, ...(config.labels || {}) };
-    const wanted = Array.isArray(config.open_buttons) ? config.open_buttons : OPEN_BUTTONS.map((b) => b.key);
-    this._openButtons = OPEN_BUTTONS.filter((b) => wanted.includes(b.key));
+    // null: follow the device page (buttons not hidden there)
+    this._openButtons = Array.isArray(config.open_buttons) && config.open_buttons.length
+      ? OPEN_BUTTONS.filter((b) => config.open_buttons.includes(b.key)) : null;
     this._openEntities = {};
     this._confirming = null;
     this._render();
@@ -376,7 +379,11 @@ class AnjieloTalkCard extends HTMLElement {
   /* The open buttons row: one button per chosen entity found on the device. */
   _updateActions() {
     const row = this._$("actions");
-    const shown = (this._openButtons || []).filter((b) => this._openEntities[b.key]);
+    const ents = (this._hass && this._hass.entities) || {};
+    const shown = (this._openButtons || OPEN_BUTTONS.filter((b) => {
+      const e = ents[this._openEntities[b.key]];
+      return e && !e.hidden;
+    })).filter((b) => this._openEntities[b.key]);
     const keys = shown.map((b) => b.key).join(",");
     if (row.dataset.keys !== keys) {
       row.dataset.keys = keys;
